@@ -3,12 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>手工织锦纹样排版台</title>
+  <title>手工织锦 · 试织排机与色线领用复核台</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, "PingFang SC", sans-serif; background: #f3efe7; color: #282018; }
-    header { padding: 18px 24px; background: #fffaf2; border-bottom: 1px solid #d9cdbc; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    [hidden] { display: none !important; }
+    header { padding: 18px 24px; background: #fffaf2; border-bottom: 1px solid #d9cdbc; display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
     h1 { margin: 0; font-size: 26px; }
+    h2 { font-size: 18px; }
+    h3 { font-size: 15px; margin-bottom: 6px; }
     button { border: 0; border-radius: 8px; padding: 10px 13px; background: #8d3e37; color: #fff; font-weight: 800; cursor: pointer; }
     button.secondary { background: #71675c; }
     input, select { width: 100%; border: 1px solid #d9cdbc; border-radius: 6px; padding: 9px; font: inherit; background: #fff; }
@@ -25,22 +28,74 @@
     .stat { display: flex; justify-content: space-between; border-bottom: 1px solid #e1d5c5; padding: 6px 0; }
     .preview { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border: 1px solid #d9cdbc; padding: 6px; margin-top: 8px; }
     .mini { aspect-ratio: 1; border-radius: 2px; }
-    .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
     .warning { color: #a03a2e; font-weight: 800; }
-    @media (max-width: 1000px) { header { display: block; } .app { grid-template-columns: 1fr; } }
+    .muted { color: #76695e; font-size: 12px; font-weight: 400; }
+    .swatch-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
+    .msg { font-weight: 800; min-height: 1.2em; }
+    .msg.ok { color: #355b38; }
+    .msg.err { color: #a03a2e; }
+    /* 排机复核台 */
+    #stationTab { padding: 16px; display: grid; gap: 16px; }
+    .station-grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 16px; align-items: start; }
+    .cards { display: flex; flex-wrap: wrap; gap: 8px; }
+    .card { background: #fff; border: 1px solid #d9cdbc; border-radius: 8px; padding: 8px 12px; min-width: 88px; text-align: center; }
+    .card b { display: block; font-size: 20px; }
+    .card span { color: #76695e; font-size: 12px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 800; color: #fff; background: #71675c; }
+    .st-待补料 { background: #b07d2b; }
+    .st-在织 { background: #1f5f78; }
+    .st-待复核 { background: #713d7b; }
+    .st-返修 { background: #a03a2e; }
+    .st-冻结 { background: #4a4a55; }
+    .st-合格 { background: #355b38; }
+    .st-已关机 { background: #8a8178; }
+    .order-card { border: 1px solid #d9cdbc; border-radius: 8px; background: #fff; padding: 10px 12px; margin-bottom: 10px; }
+    .order-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .order-meta { color: #76695e; font-size: 13px; margin: 4px 0; }
+    .reasons { color: #a03a2e; font-size: 13px; font-weight: 700; }
+    .note { color: #1f5f78; font-size: 13px; }
+    .trial { font-size: 13px; padding: 4px 8px; border-left: 3px solid #355b38; margin: 4px 0; background: #f6f1e6; }
+    .trial.archived { border-left-color: #8a8178; color: #8a8178; }
+    .trial .arch-tag { font-weight: 800; }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .actions button { padding: 6px 10px; font-size: 13px; }
+    .row-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px solid #e1d5c5; padding: 5px 0; font-size: 13px; }
+    .row-line button { padding: 4px 8px; font-size: 12px; }
+    .req-row { border: 1px solid #d9cdbc; border-radius: 8px; padding: 8px; margin-bottom: 8px; background: #fff; font-size: 13px; }
+    .req-row input { margin: 6px 0; }
+    .inline-form { display: flex; gap: 6px; margin: 8px 0; }
+    .inline-form select, .inline-form input { width: auto; flex: 1; }
+    .trial-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    #trialForm { border-top: 1px dashed #d9cdbc; margin-top: 10px; padding-top: 10px; }
+    @media (max-width: 1100px) { header { display: block; } .app, .station-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <header>
-    <div><h1>手工织锦纹样排版台</h1><div>绘制经纬网格纹样，统计色线用量并保存方案。</div></div>
-    <div class="toolbar"><button id="saveBtn">保存方案</button><button id="exportBtn" class="secondary">导出JSON</button></div>
+    <div>
+      <h1>手工织锦 · 试织排机与色线领用复核台</h1>
+      <div>纹样排版 → 排机试织 → 色线领用复核，全程留痕；规则、存储、展示三模块分离。</div>
+    </div>
+    <div class="toolbar">
+      <button id="tabDesignBtn" class="secondary">纹样排版台</button>
+      <button id="tabStationBtn">排机复核台</button>
+      <button id="resetBtn" class="secondary">重置演示数据</button>
+    </div>
   </header>
-  <main class="app">
+
+  <!-- 纹样排版台 -->
+  <main class="app" id="designTab" hidden>
     <aside class="panel">
       <h2>画布</h2>
       <label>经向列数</label><input id="cols" type="number" value="18" min="6" max="36">
       <label>纬向行数</label><input id="rows" type="number" value="14" min="6" max="32">
       <button id="newBtn">新建网格</button>
+      <h2>登记纹样</h2>
+      <label>纹样编号</label><input id="patNo" value="P-1003">
+      <label>版本</label><input id="patVer" value="v1.0">
+      <button id="saveBtn">保存方案（登记入库）</button>
+      <p id="designMsg" class="msg"></p>
       <h2>色线库</h2>
       <div class="palette" id="palette"></div>
       <h2>基础纹样块</h2>
@@ -55,6 +110,7 @@
       <h2>操作</h2>
       <div class="toolbar"><button id="undoBtn" class="secondary">撤销</button><button id="redoBtn" class="secondary">重做</button></div>
       <p>点击填色，按住拖动可连续填色。</p>
+      <div class="toolbar"><button id="exportBtn" class="secondary">导出JSON</button></div>
       <h2>用色统计</h2>
       <div class="stats" id="stats"></div>
       <h2>重复单元预览</h2>
@@ -63,72 +119,64 @@
       <div id="risk"></div>
     </aside>
   </main>
-  <script>
-    const colors = ["#f7e7c4","#a6322d","#1f5f78","#d6a437","#355b38","#713d7b","#1e1b18","#e98c52"];
-    const grid = document.querySelector("#grid");
-    const palette = document.querySelector("#palette");
-    const stats = document.querySelector("#stats");
-    const preview = document.querySelector("#preview");
-    const risk = document.querySelector("#risk");
-    let cols = 18, rows = 14, active = 1, block = "dot", dragging = false;
-    let cells = [];
-    let undo = [], redo = [];
-    function init(loadSaved = true) {
-      const saved = loadSaved && JSON.parse(localStorage.getItem("zfl31Pattern") || "null");
-      if (saved) { cols = saved.cols; rows = saved.rows; cells = saved.cells; }
-      else { cols = Number(document.querySelector("#cols").value); rows = Number(document.querySelector("#rows").value); cells = Array(cols * rows).fill(0); }
-      document.querySelector("#cols").value = cols; document.querySelector("#rows").value = rows;
-      render();
-    }
-    function render() {
-      palette.innerHTML = colors.map((c, i) => '<button class="swatch '+(i===active?'active':'')+'" data-color="'+i+'" style="background:'+c+'"></button>').join("");
-      palette.querySelectorAll("[data-color]").forEach(el => el.onclick = () => { active = Number(el.dataset.color); render(); });
-      grid.style.gridTemplateColumns = "repeat("+cols+", 1fr)";
-      grid.innerHTML = cells.map((v, i) => '<div class="cell" data-i="'+i+'" style="background:'+colors[v]+'"></div>').join("");
-      grid.querySelectorAll(".cell").forEach(el => {
-        el.onpointerdown = () => { dragging = true; paint(Number(el.dataset.i)); };
-        el.onpointerenter = () => { if (dragging) paint(Number(el.dataset.i)); };
-      });
-      window.onpointerup = () => dragging = false;
-      renderStats();
-    }
-    function snapshot() { undo.push([...cells]); redo = []; if (undo.length > 50) undo.shift(); }
-    function paint(i) {
-      snapshot();
-      const targets = pattern(i);
-      targets.forEach(t => { if (t >= 0 && t < cells.length) cells[t] = active; });
-      render();
-    }
-    function pattern(i) {
-      const x = i % cols, y = Math.floor(i / cols);
-      if (block === "cross") return [i, idx(x-1,y), idx(x+1,y), idx(x,y-1), idx(x,y+1)].filter(v => v !== null);
-      if (block === "diamond") return [idx(x,y-1), idx(x-1,y), i, idx(x+1,y), idx(x,y+1)].filter(v => v !== null);
-      return [i];
-    }
-    function idx(x,y) { return x < 0 || x >= cols || y < 0 || y >= rows ? null : y * cols + x; }
-    function renderStats() {
-      const counts = colors.map((_, i) => cells.filter(v => v === i).length);
-      stats.innerHTML = counts.map((n, i) => '<div class="stat"><span><span style="display:inline-block;width:14px;height:14px;background:'+colors[i]+'"></span> 色线'+i+'</span><b>'+n+'</b></div>').join("");
-      preview.innerHTML = Array.from({length: 36}, (_, i) => '<div class="mini" style="background:'+colors[cells[(i % 6) + Math.floor(i / 6) * cols] || colors[0]]+'"></div>').join("");
-      const riskRows = [];
-      for (let y = 0; y < rows; y++) {
-        let switches = 0;
-        for (let x = 1; x < cols; x++) if (cells[y*cols+x] !== cells[y*cols+x-1]) switches++;
-        if (switches > cols * .62) riskRows.push(y + 1);
-      }
-      risk.innerHTML = riskRows.length ? '<p class="warning">第'+riskRows.join("、")+'行换色过密，可能断线。</p>' : '<p>暂无明显断线风险。</p>';
-    }
-    document.querySelectorAll("[data-block]").forEach(btn => btn.onclick = () => block = btn.dataset.block);
-    document.querySelector("#newBtn").onclick = () => { undo = []; redo = []; init(false); };
-    document.querySelector("#undoBtn").onclick = () => { if (!undo.length) return; redo.push([...cells]); cells = undo.pop(); render(); };
-    document.querySelector("#redoBtn").onclick = () => { if (!redo.length) return; undo.push([...cells]); cells = redo.pop(); render(); };
-    document.querySelector("#saveBtn").onclick = () => localStorage.setItem("zfl31Pattern", JSON.stringify({ cols, rows, cells }));
-    document.querySelector("#exportBtn").onclick = () => {
-      const data = { cols, rows, cells, usage: colors.map((color, i) => ({ color, count: cells.filter(v => v === i).length })) };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "brocade-pattern.json"; a.click(); URL.revokeObjectURL(a.href);
-    };
-    init();
-  </script>
+
+  <!-- 试织排机与色线领用复核台 -->
+  <main id="stationTab">
+    <section class="panel">
+      <h2>汇总 <span class="muted">（汇总由存储状态实时推算，刷新页面后保持一致；留档旧结果不计入合格统计）</span></h2>
+      <div class="cards" id="sumCards"></div>
+      <p id="stationMsg" class="msg"></p>
+    </section>
+    <div class="station-grid">
+      <section class="panel">
+        <h2>排机登记</h2>
+        <label>纹样（编号 / 版本）</label><select id="schPattern"></select>
+        <label>织机号</label><select id="schLoom"></select>
+        <label>经线批次</label><select id="schBatch"></select>
+        <label>色线领用单</label><select id="schReq"></select>
+        <label>预计完成日</label><input id="schDue" type="date">
+        <p></p>
+        <button id="schBtn">登记排机</button>
+        <h3>织机状态</h3><div id="loomList"></div>
+        <h3>经线批次</h3><div id="batchList"></div>
+      </section>
+      <section class="panel">
+        <h2>工单与试织记录</h2>
+        <div id="orderList"></div>
+        <div id="trialForm" hidden>
+          <h3>录入试织记录 <span id="trialOrder" class="badge st-在织"></span></h3>
+          <div class="trial-grid">
+            <div><label>断线次数（上限 <span id="limBreaks"></span> 次）</label><input id="tfBreaks" type="number" min="0" value="1"></div>
+            <div><label>经密（<span id="limWarp"></span>）</label><input id="tfWarp" type="number" min="0" value="40"></div>
+            <div><label>纬密（<span id="limWeft"></span>）</label><input id="tfWeft" type="number" min="0" value="36"></div>
+            <div><label>样片结果</label><select id="tfSample"><option>合格</option><option>瑕疵</option></select></div>
+          </div>
+          <p></p>
+          <button id="tfSubmit">提交试织记录</button>
+          <button id="tfCancel" class="secondary">取消</button>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>色线库存</h2>
+        <div id="stockList"></div>
+        <div class="inline-form">
+          <select id="stockColor"></select>
+          <input id="stockQty" type="number" min="1" value="10">
+          <button id="stockBtn">入库</button>
+        </div>
+        <h2>色线领用单</h2>
+        <p class="muted">更正 / 撤换后，关联排机与合格结论立即失效并重算。</p>
+        <div id="reqList"></div>
+        <h2>纹样版本库</h2>
+        <p class="muted">纹样按「编号 + 版本」唯一。</p>
+        <div id="patternList"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- 三个业务模块：规则 / 记录存储 / 页面展示 -->
+  <script src="rules.js"></script>
+  <script src="store.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
